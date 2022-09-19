@@ -6,21 +6,60 @@ window=Window(enforce_window_limits=True, draw_sprite_rects=True)
 
 clicked_cards=[]
 
+
+
 # Getting images and cardset
 card_scale=1
-cardsets=[("David",1),("Dungeon",4),("Splat",0.25)]
-cardset,cardset_scale=random.choice(cardsets)
+cardsets=[("David",1),("Dungeon",4),("Splat",0.25),("Anime",0.2)]
+cardset=None
+cardset_scale=1
 card_images=["1.png","2.png","3.png","4.png","5.png"]*4
+start_game=False
 random.shuffle(card_images)
+
+def change_cardset(cardset_to_change_to: int):
+    global cardset
+    global cardset_scale
+    global start_game
+    cardset,cardset_scale=cardsets[cardset_to_change_to]
+    start_game=True
 
 class TypeableLabel(Label):
     def on_create(self):
-        self.text="some text"
+        self.text=""
         window.subscribe(on_key_press=self.on_key_press)
+        self.position=Point(window.width/2,window.height/2)
+        print(self.font_size)
 
     def on_key_press(self,key: KeyEvent):
-        print(type(key))
-        self.text+=key.character
+        # print(type(key))
+        if not start_game:
+            if key.character=="\n" or len(self.text)<7:
+                self.text+=key.character
+
+    def on_update(self, dt):
+        
+        if "\n" in self.text:
+            # Called after Enter key (\n) is pressed
+            if "david" in self.text:
+                change_cardset(0)
+                self.text=""
+            elif "dungeon" in self.text:
+                change_cardset(1)
+                self.text=""
+            elif "splat" in self.text:
+                change_cardset(2)
+                self.text=""
+            elif "anime" in self.text:
+                change_cardset(3)
+                self.text=""
+            else:
+                self.text=""
+                print("Sorry kind sir, but I'm dearly afraid I got no idea what in the world that is man like bro why cant you type something better?")
+
+        self.position=Point(window.width/2-(6*len(self.text)),window.height/2)
+
+        
 
 class CardParticleSystem():
     def __init__(self):
@@ -92,14 +131,23 @@ class CheckButton(Sprite):
             clicked_cards=[]
 
 
+class GameStarter(Sprite):
+    def on_create(self):
+        self.game_started=False
 
-window.create_sprite(CheckButton,x=640,y=320)
+    def on_update(self, dt):
+        if start_game and not self.game_started:
+            window.create_sprite(CheckButton,x=640,y=320)
 
-for x in range(100,600,100):
-    for y in range(100,500,100):
-        if len(card_images):
-            image=card_images.pop()
-        window.create_sprite(Card,x=x,y=y,image="card-images/"+cardset+"/"+image,scale=cardset_scale)
+            for x in range(100,600,100):
+                for y in range(100,500,100):
+                    if len(card_images):
+                        image=card_images.pop()
+                    window.create_sprite(Card,x=x,y=y,image="card-images/"+cardset+"/"+image,scale=cardset_scale)
+
+            self.game_started=True
+
+game_starter=window.create_sprite(GameStarter)
 
 window.create_label(TypeableLabel)
 
