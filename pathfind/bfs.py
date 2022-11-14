@@ -12,7 +12,7 @@ class BFS():
 
             v = self.queue.pop(0)
             if v == end:
-                print("True")
+                print("Pathfind Successful")
                 return True
 
             for n in v.get_neighbors():
@@ -26,9 +26,14 @@ class BFS():
     def get_path(self):
         v = self.end
         path=[v]
-        while v!=self.start:
-            v=self.parents[v]
-            path.append(v)
-        return path
+        if v in self.parents:
+            while v!=self.start:
+                v=self.parents[v]
+                path.append(v)
+            return list(reversed(path))
+
+        else:
+            print("Pathfind Unsuccessful")
+            return []
 
 
