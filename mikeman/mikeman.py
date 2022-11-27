@@ -1,9 +1,12 @@
 from pycat.core import Window, Sprite, Color, KeyCode, Point, RotationMode
 from pycat.extensions.ldtk import LdtkLayeredLevel
 from random import choice
+from mikeman_bfs import BFS
 import string
 
 window = Window()
+
+bfs=BFS()
 
 grid_x = 16
 grid_y = 10
@@ -36,6 +39,7 @@ class Mikeman(Sprite):
         self.goto(window.get_sprite_with_tag("ldtk_start"))
         self.queued_rotation = None
         self.rotation = 0
+        self.current_cell=find_cell(self.position)
         self.not_moving = False
         self.rotation_to_offset = {
             0: Point(64, 0),
@@ -56,6 +60,7 @@ class Mikeman(Sprite):
             else:
                 self.goto(self.target_cell)
                 self.target_cell = None
+                self.current_cell=find_cell(self.position)
 
         if not self.target_cell:
             old_rotation = self.rotation
@@ -83,6 +88,29 @@ class Mikeman(Sprite):
         elif window.is_key_down(KeyCode.D):
             self.queued_rotation = 0
 
+            
+class Ghost(Sprite):
+    def on_create(self):
+        self.scale=60
+        self.color=Color.RED
+        self.goto(window.get_sprite_with_tag("ldtk_enemyspawn"))
+        self.target_cell=None
+        self.current_cell=find_cell(self.position)
+        
+
+    def on_update(self, dt):
+        bfs.solve(self.current_cell,mikeman.current_cell)
+        if not len(bfs.get_path())<1:
+            self.target_cell=bfs.get_path()[1]
+        if self.target_cell != None:
+            if self.distance_to(self.target_cell) > 3:
+                self.move_forward(2)
+
+            else:
+                self.goto(self.target_cell)
+                self.target_cell = None
+                self.current_cell=find_cell(self.position)
+
 
 class Cell(Sprite):
     def on_create(self):
@@ -98,21 +126,21 @@ class Cell(Sprite):
     def get_neighbors(self):
         neighbors = []
         right = find_cell(self.position+Point(64, 0))
-        if right and not right.is_barrier:
+        if right:
             neighbors.append(right)
 
         left = find_cell(self.position+Point(-64, 0))
-        if left and not left.is_barrier:
+        if left:
             neighbors.append(left)
 
         up = find_cell(self.position+Point(0, 64))
 
-        if up and not up.is_barrier:
+        if up:
             neighbors.append(up)
 
         down = find_cell(self.position+Point(0, -64))
 
-        if down and not down.is_barrier:
+        if down:
             neighbors.append(down)
 
         return neighbors
@@ -126,5 +154,6 @@ for x in range(0, grid_x*64, 64):
         if cell.is_touching_any_sprite_with_tag("ldtk_wall"):
             cell.delete()
 
-window.create_sprite(Mikeman)
+mikeman=window.create_sprite(Mikeman)
+ghost=window.create_sprite(Ghost)
 window.run()
