@@ -1,11 +1,16 @@
+from numpy import dtype
 from pycat.core import Sprite, Window, Color, KeyCode,Point
 import random
 
-window=Window()
+current_enemy="spike"
+current_obstacle="obstacle"
 
-class Player(Sprite):
+window=Window(draw_sprite_rects=True)
+
+class Circle(Sprite):
     def on_create(self):
         # self.image=""
+        self.add_tag("player")
         self.can_jump=False
         self.x=640
         self.y=640
@@ -15,42 +20,111 @@ class Player(Sprite):
         self.speed=Point(0,0)
 
     def on_update(self,dt):
-        self.speed.y+=self.GRAVITY
+
+        if self.is_touching_any_sprite_with_tag(current_enemy):
+            window.close()
+        
         self.speed.x*=self.FRICTION
+        self.speed.y+=self.GRAVITY
+
+        self.take_user_input()
+            
+        self.position+=self.speed
+
+        self.adjust_player_position()
+
+        
+    def take_user_input(self):
+
         if window.is_key_pressed(KeyCode.D):
             self.speed.x+=0.3
 
         if window.is_key_pressed(KeyCode.A):
             self.speed.x-=0.3
-
-        if (self.y<=0 or self.is_touching_any_sprite_with_tag("obstacle")):
-            if self.speed.y<0:
-                while self.y<0 or self.is_touching_any_sprite_with_tag("obstacle"):
-                    self.y+=1
-                self.can_jump=True
-                self.speed.y=0
-            elif self.speed.y>0:
-                self.speed.y-=1
-                
             
-
-
-
-        if window.is_key_down(KeyCode.W) and self.can_jump:
+        if window.is_key_down(KeyCode.SPACE) and self.can_jump:
             self.speed.y=20
             self.can_jump=False
 
-        self.position+=self.speed
+    def adjust_player_position(self):
+
+        for obstacle in window.get_sprites_with_tag(current_obstacle):
+
+            if (self.y<=0 or self.is_touching_sprite(obstacle)):
+                if self.speed.y<0:
+                    while self.y<0 or self.is_touching_sprite(obstacle):
+                        self.y+=0.05
+                    self.can_jump=True
+                    self.speed.y=0
+                    
+                elif self.speed.y>0:
+                    if obstacle.headbump:
+                        while self.is_touching_sprite(obstacle):
+                            self.y-=1
+                        self.speed.y=0
+                    else:
+                        self.speed.y-=0.2  
+
+        if self.is_touching_any_sprite_with_tag("upright"):
+            if self.speed.x>0:
+                while self.is_touching_any_sprite_with_tag("upright"):
+                    self.x-=0.05
+
+            else:
+                while self.is_touching_any_sprite_with_tag("upright"):
+                    self.x+=0.05     
         
         
-class Obstacle(Sprite):
+class Rectangle(Sprite):
     def on_create(self):
         self.add_tag("obstacle")
+        self.headbump=False
 
-window.create_sprite(Obstacle,x=640,y=100,scale_x=100,scale_y=10)
+class UprightRectangle(Sprite):
+    def on_create(self):
+        self.add_tag("upright")
+
+class Triangle(Sprite):
+    def on_create(self):
+        self.image="white_triangle.png"
+        self.hitbox=window.create_sprite()
+        self.hitbox.goto(self)
+        self.hitbox.scale=23
+        self.hitbox.opacity=0
+        self.hitbox.add_tag("spike")
+
+    def on_update(self, dt):
+        self.hitbox.goto(self)
+
+class Oval(Sprite):
+    def on_create(self):
+        self.scale_x=2
+        self.cooldown=0
+        self.target_oval:Oval
+
+    def on_update(self,dt):
+        if self.is_touching_any_sprite_with_tag("player") and self.cooldown==0:
+            if self.target_oval:
+                player.goto(self.target_oval)
+                self.target_oval.cooldown=5
+
+        if self.cooldown>0:
+            self.cooldown-=dt
+            if self.cooldown<=0:
+                self.cooldown=0
 
 
 
-player=window.create_sprite(Player)
+
+hb_platform=window.create_sprite(Rectangle,x=640,y=100,scale_x=1280,scale_y=10)
+hb_platform.headbump=True
+nothb_platform=window.create_sprite(Rectangle,x=800,y=300,scale_x=1280,scale_y=10)
+nothb_platform.headbump=True
+weird_plat=window.create_sprite(UprightRectangle,x=400,y=150,scale_x=10,scale_y=100)
+
+spike=window.create_sprite(Triangle,x=800,y=132)
+
+
+player=window.create_sprite(Circle)
 
 window.run()
