@@ -66,27 +66,29 @@ class Circle(Sprite):
                     else:
                         self.speed.y=0
                     
-                if self.speed.y>0:
-                    if obstacle.headbump:
+                if self.speed.y>=0:
+                    if obstacle.headbump and self.x+(self.scale/2-self.scale/10)<obstacle.x:
                         while self.is_touching_sprite(obstacle):
                             self.y-=1
                             ceiling=True
+
                         self.speed.y=0
                     else:
                         self.speed.y-=0.2  
+
 
                 
                 if ground and ceiling:
                     self.delete()
         print(ground,ceiling)
 
-        if self.is_touching_any_sprite_with_tag("rectangle"):
+        if self.is_touching_any_sprite_with_tag("upright"):
             if self.speed.x>0:
-                while self.is_touching_any_sprite_with_tag("rectangle"):
+                while self.is_touching_any_sprite_with_tag("upright"):
                     self.x-=0.05
 
             else:
-                while self.is_touching_any_sprite_with_tag("rectangle"):
+                while self.is_touching_any_sprite_with_tag("upright"):
                     self.x+=0.05     
         
         
@@ -94,6 +96,7 @@ class Rectangle(Sprite):
     def on_create(self):
         self.rotation_mode=RotationMode.RIGHT_LEFT
         self.add_tag("rectangle")
+        self.add_tag("upright")
         self.headbump=False
         self.bouncy=False
         self.resistant=False
