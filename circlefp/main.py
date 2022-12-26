@@ -1,11 +1,12 @@
-from numpy import dtype
 from pycat.core import Sprite, Window, Color, KeyCode,Point
 import random
 
-current_enemy="spike"
-current_obstacle="obstacle"
+current_enemy="triangle"
+current_obstacle="rectangle"
+current_npc=""
 
-window=Window(draw_sprite_rects=True)
+window=Window()
+# draw_sprite_rects=True
 
 class Circle(Sprite):
     def on_create(self):
@@ -42,7 +43,7 @@ class Circle(Sprite):
         if window.is_key_pressed(KeyCode.A):
             self.speed.x-=0.3
             
-        if window.is_key_down(KeyCode.SPACE) and self.can_jump:
+        if window.is_key_down(KeyCode.W) and self.can_jump:
             self.speed.y=20
             self.can_jump=False
 
@@ -54,8 +55,12 @@ class Circle(Sprite):
                 if self.speed.y<0:
                     while self.y<0 or self.is_touching_sprite(obstacle):
                         self.y+=0.05
-                    self.can_jump=True
-                    self.speed.y=0
+                    if not obstacle.resistant:
+                        self.can_jump=True
+                    if obstacle.bouncy:
+                        self.speed.y=abs(self.speed.y)-(abs(self.speed.y)/5)
+                    else:
+                        self.speed.y=0
                     
                 elif self.speed.y>0:
                     if obstacle.headbump:
@@ -77,12 +82,41 @@ class Circle(Sprite):
         
 class Rectangle(Sprite):
     def on_create(self):
-        self.add_tag("obstacle")
+        self.add_tag("rectangle")
         self.headbump=False
+        self.bouncy=False
+        self.resistant=False
+        self.moving=False
+        self.start_point=self.position
+        self.end_point=None
+        self.going_to="end"
+
+    def on_update(self,dt):
+        if self.bouncy:
+            self.color=Color.YELLOW
+            self.resistant=False
+        if self.resistant:
+            self.color=Color.ROSE
+        
+        if self.moving:
+            self.color=Color.GREEN
+            if self.start_point and self.end_point:
+                if self.going_to=="end":
+                    self.point_toward(self.end_point)
+                    self.move_forward(1)
+                    if self.distance_to(self.end_point)<2:
+                        self.position=self.end_point
+                        self.going_to="start"
+
+                elif self.going_to=="start":
+                    self.point_toward(self.start_point)
+                    self.move_forward(1)
+
 
 class UprightRectangle(Sprite):
     def on_create(self):
         self.add_tag("upright")
+        self.layer=-1
 
 class Triangle(Sprite):
     def on_create(self):
@@ -91,7 +125,7 @@ class Triangle(Sprite):
         self.hitbox.goto(self)
         self.hitbox.scale=23
         self.hitbox.opacity=0
-        self.hitbox.add_tag("spike")
+        self.hitbox.add_tag("triangle")
 
     def on_update(self, dt):
         self.hitbox.goto(self)
@@ -103,7 +137,7 @@ class Oval(Sprite):
         self.target_oval:Oval
 
     def on_update(self,dt):
-        if self.is_touching_any_sprite_with_tag("player") and self.cooldown==0:
+        if self.is_touching_sprite(player) and self.cooldown==0:
             if self.target_oval:
                 player.goto(self.target_oval)
                 self.target_oval.cooldown=5
@@ -113,13 +147,16 @@ class Oval(Sprite):
             if self.cooldown<=0:
                 self.cooldown=0
 
-
-
+class Hexagon(Sprite):
+    pass
 
 hb_platform=window.create_sprite(Rectangle,x=640,y=100,scale_x=1280,scale_y=10)
 hb_platform.headbump=True
-nothb_platform=window.create_sprite(Rectangle,x=800,y=300,scale_x=1280,scale_y=10)
+nothb_platform=window.create_sprite(Rectangle,x=800,y=300,scale_x=30,scale_y=10)
 nothb_platform.headbump=True
+nothb_platform.bouncy=True
+nothb_platform.moving=True
+nothb_platform.end_point=Point(800,500)
 weird_plat=window.create_sprite(UprightRectangle,x=400,y=150,scale_x=10,scale_y=100)
 
 spike=window.create_sprite(Triangle,x=800,y=132)
