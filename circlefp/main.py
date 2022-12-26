@@ -1,4 +1,4 @@
-from pycat.core import Sprite, Window, Color, KeyCode,Point
+from pycat.core import Sprite, Window, Color, KeyCode,Point,RotationMode
 import random
 
 current_enemy="triangle"
@@ -48,6 +48,8 @@ class Circle(Sprite):
             self.can_jump=False
 
     def adjust_player_position(self):
+        ground=False
+        ceiling=False
 
         for obstacle in window.get_sprites_with_tag(current_obstacle):
 
@@ -55,6 +57,8 @@ class Circle(Sprite):
                 if self.speed.y<0:
                     while self.y<0 or self.is_touching_sprite(obstacle):
                         self.y+=0.05
+                        ground=True
+
                     if not obstacle.resistant:
                         self.can_jump=True
                     if obstacle.bouncy:
@@ -62,32 +66,39 @@ class Circle(Sprite):
                     else:
                         self.speed.y=0
                     
-                elif self.speed.y>0:
+                if self.speed.y>0:
                     if obstacle.headbump:
                         while self.is_touching_sprite(obstacle):
                             self.y-=1
+                            ceiling=True
                         self.speed.y=0
                     else:
                         self.speed.y-=0.2  
 
-        if self.is_touching_any_sprite_with_tag("upright"):
+                
+                if ground and ceiling:
+                    self.delete()
+        print(ground,ceiling)
+
+        if self.is_touching_any_sprite_with_tag("rectangle"):
             if self.speed.x>0:
-                while self.is_touching_any_sprite_with_tag("upright"):
+                while self.is_touching_any_sprite_with_tag("rectangle"):
                     self.x-=0.05
 
             else:
-                while self.is_touching_any_sprite_with_tag("upright"):
+                while self.is_touching_any_sprite_with_tag("rectangle"):
                     self.x+=0.05     
         
         
 class Rectangle(Sprite):
     def on_create(self):
+        self.rotation_mode=RotationMode.RIGHT_LEFT
         self.add_tag("rectangle")
         self.headbump=False
         self.bouncy=False
         self.resistant=False
         self.moving=False
-        self.start_point=self.position
+        self.start_point=None
         self.end_point=None
         self.going_to="end"
 
@@ -99,6 +110,7 @@ class Rectangle(Sprite):
             self.color=Color.ROSE
         
         if self.moving:
+            self.headbump=True
             self.color=Color.GREEN
             if self.start_point and self.end_point:
                 if self.going_to=="end":
@@ -111,6 +123,9 @@ class Rectangle(Sprite):
                 elif self.going_to=="start":
                     self.point_toward(self.start_point)
                     self.move_forward(1)
+                    if self.distance_to(self.start_point)<2:
+                        self.position=self.start_point
+                        self.going_to="end"
 
 
 class UprightRectangle(Sprite):
@@ -152,14 +167,13 @@ class Hexagon(Sprite):
 
 hb_platform=window.create_sprite(Rectangle,x=640,y=100,scale_x=1280,scale_y=10)
 hb_platform.headbump=True
-nothb_platform=window.create_sprite(Rectangle,x=800,y=300,scale_x=30,scale_y=10)
-nothb_platform.headbump=True
-nothb_platform.bouncy=True
+nothb_platform=window.create_sprite(Rectangle,x=800,y=300,scale_x=100,scale_y=10)
 nothb_platform.moving=True
 nothb_platform.end_point=Point(800,500)
+nothb_platform.start_point=Point(800,100)
 weird_plat=window.create_sprite(UprightRectangle,x=400,y=150,scale_x=10,scale_y=100)
 
-spike=window.create_sprite(Triangle,x=800,y=132)
+# spike=window.create_sprite(Triangle,x=800,y=132)
 
 
 player=window.create_sprite(Circle)
