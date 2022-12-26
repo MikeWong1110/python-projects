@@ -8,20 +8,31 @@ current_npc = ""
 window = Window()
 # draw_sprite_rects=True
 
-
+class VisualCircle(Sprite):
+    def on_create(self):
+        self.image="white_circle.png"
+        self.scale=50/64
 class Circle(Sprite):
     def on_create(self):
         # self.image=""
         self.add_tag("player")
+        self.image="white_circle.png"
         self.can_jump = False
         self.x = 640
         self.y = 640
-        self.scale = 50
+        self.scale=50/64
         self.FRICTION = 0.96
         self.GRAVITY = -0.8
         self.speed = Point(0, 0)
+        self.visual=window.create_sprite(VisualCircle)
+        self.visual.image=self.image
+        self.visual.scale=self.scale
+        self.visual.goto(self)
+        self.opacity=0
 
     def on_update(self, dt):
+
+        self.visual.goto(self)
 
         if self.is_touching_any_sprite_with_tag(current_enemy):
             window.close()
@@ -32,6 +43,8 @@ class Circle(Sprite):
         self.take_user_input()
 
         self.position += self.speed
+        
+        self.visual.rotation-=self.speed.x
 
         self.adjust_player_position()
 
@@ -75,7 +88,6 @@ class Circle(Sprite):
                         while self.is_touching_sprite(obstacle):
                             self.y -= 1
                             ceiling = True
-                        print("hehehehaw")
 
                         self.speed.y = 0
                     else:
@@ -170,6 +182,7 @@ class Hexagon(Sprite):
 
 hb_platform = window.create_sprite(
     Rectangle, x=500, y=100, scale_x=1280, scale_y=10)
+
 nothb_platform = window.create_sprite(
     Rectangle, x=1180, y=100, scale_x=100, scale_y=10)
 nothb_platform.moving = True
