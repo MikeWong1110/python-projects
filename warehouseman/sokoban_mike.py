@@ -2,9 +2,14 @@ from pycat.core import Sprite, Window, Color, KeyCode, Point
 from pycat.extensions.ldtk import LdtkLayeredLevel
 import random
 
+level=LdtkLayeredLevel.from_file("sokoban_levels.ldtk", "Level_0","sokoban_levels/png/",{
+    "Tiles":0
+})
+
 
 grid_size=15
 window= Window(enforce_window_limits=False,height=960,width=960)
+level.render(window,debug_entities=True)
 
 class Pixel(Sprite):
     def on_create(self):
