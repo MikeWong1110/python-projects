@@ -3,57 +3,14 @@ from pycat.extensions.ldtk import LdtkLayeredLevel
 import random
 
 level=LdtkLayeredLevel.from_file("sokoban_levels.ldtk", "Level_0","sokoban_levels/png/",{
-    "Tiles":0
+    "Tiles":-1
 })
 
 
 grid_size=15
 window= Window(enforce_window_limits=False,height=960,width=960)
-level.render(window,debug_entities=True)
-
-class Pixel(Sprite):
-    def on_create(self):
-        
-        self.placeholder=window.create_sprite(scale=64)
-        
-        self.placeholder.opacity=0
-
-    def setup(self, pixel_type):
-        self.placeholder.goto(self)
-        if pixel_type=="w":
-            if "wall" not in self.tags:
-                self.add_tag("wall")
-                self.color=Color.BLUE
-                self.placeholder.opacity=255
-                self.placeholder.color=Color.BLUE
-        if pixel_type=="f":
-            if "wall" in self.tags:
-                self.tags.remove("wall")
-            if "finish" not in self.tags:
-                self.add_tag("finish")
-                self.color=Color.GREEN
-                self.placeholder.opacity=255
-                self.placeholder.color=Color.GREEN
-                self.placeholder.scale=64
-
-    def on_update(self,dt):
-        if "finish" in self.tags:
-            if check_win():
-                print("win")
-                window.close()
-
-        
-
+level.render(window) #debug_
 grid=[]
-for rows in range(grid_size):
-    grid.append([None]*grid_size)
-
-for x in range(grid_size):
-    for y in range(grid_size):
-        cell=window.create_sprite(Pixel,x=x*64+32,y=y*64+32)
-        grid[x][y]=cell
-        if x==0 or y==0 or x==grid_size-1 or y==grid_size-1:
-            cell.setup("w")
 
 class Box(Sprite):
     def move(self,direction):
@@ -73,10 +30,69 @@ class Box(Sprite):
         self.color=Color.RED
         self.layer=2
 
+class Pixel(Sprite):
+    def on_create(self):
+        
+        self.placeholder=window.create_sprite(scale=64)
+        
+        self.placeholder.opacity=0
+
+    def setup(self):
+        self.placeholder.goto(self)
+        if self.is_touching_any_sprite_with_tag("ldtk_wall"):
+            if "wall" not in self.tags:
+                self.add_tag("wall")
+                self.color=Color.BLUE
+                # self.placeholder.opacity=255
+                self.placeholder.color=Color.BLUE
+        elif self.is_touching_any_sprite_with_tag("ldtk_finish"):
+            if "finish" not in self.tags:
+                self.add_tag("finish")
+                self.layer=10
+                self.color=Color.GREEN
+                self.placeholder.opacity=255
+                self.placeholder.color=Color.GREEN
+                self.placeholder.scale=64
+
+        elif self.is_touching_any_sprite_with_tag("ldtk_box"):
+            box=window.create_sprite(Box)
+            box.goto(self)
+            box.layer=100
+
+        # elif self.is_touching_any_sprite_with_tag("ldtk_player_start"):
+        #     if window.get_sprites_with_tag("player"):
+        #        window.get_sprites_with_tag("player")[0].goto(self)
+            
+        
+            
+
+    def on_update(self,dt):
+        if "finish" in self.tags:
+            if check_win():
+                print("win")
+                window.close()
+
+        
+
+
+for rows in range(grid_size):
+    grid.append([None]*grid_size)
+
+for x in range(grid_size):
+    for y in range(grid_size):
+        cell=window.create_sprite(Pixel,x=x*64+32,y=y*64+32)
+        grid[x][y]=cell
+        # if x==0 or y==0 or x==grid_size-1 or y==grid_size-1:
+        cell.setup()
+        cell.layer=10
+
 class Sokoban(Sprite):
     
     def on_create(self):
+        self.layer=100
         self.scale=60
+        self.not_setup=True
+        self.add_tag("player")
         self.goto(grid[1][1])
         self.vector_dict={
             "u":Point(0,64),
@@ -108,6 +124,10 @@ class Sokoban(Sprite):
     
 
     def on_update(self, dt):
+        if self.not_setup:
+            self.goto(window.get_sprite_with_tag("ldtk_player_start"))
+            self.not_setup=False
+
         if window.is_key_down(KeyCode.W):
             self.try_move("u")
 
@@ -127,12 +147,8 @@ def check_win():
             return False
     return True
 
-window.create_sprite(Sokoban)
-box=window.create_sprite(Box)
-box.goto(grid[2][2])
-box=window.create_sprite(Box)
-box.goto(grid[2][3])
-grid[random.randint(1,grid_size-2)][random.randint(1,grid_size-2)].setup("f")
-grid[random.randint(1,grid_size-2)][random.randint(1,grid_size-2)].setup("f")
+sokoban = window.create_sprite(Sokoban)
+
+
 
 window.run()
